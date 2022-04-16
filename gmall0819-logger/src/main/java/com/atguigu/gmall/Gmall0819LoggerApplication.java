@@ -9,5 +9,4 @@ public class Gmall0819LoggerApplication {
     public static void main(String[] args) {
         SpringApplication.run(Gmall0819LoggerApplication.class, args);
     }
-
 }
