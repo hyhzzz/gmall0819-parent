@@ -13,9 +13,7 @@ import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.state.filesystem.FsStateBackend;
 import org.apache.flink.streaming.api.CheckpointingMode;
-import org.apache.flink.streaming.api.datastream.DataStreamSource;
-import org.apache.flink.streaming.api.datastream.KeyedStream;
-import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
+import org.apache.flink.streaming.api.datastream.*;
 import org.apache.flink.streaming.api.environment.CheckpointConfig;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
@@ -188,10 +186,23 @@ public class BaseLogApp {
         });
 
         pageDS.print("page");
-        pageDS.getSideOutput(startTag).print("start");
-        pageDS.getSideOutput(displayTag).print("display");
+        DataStream<String> startDS = pageDS.getSideOutput(startTag);
+        DataStream<String> displayDS = pageDS.getSideOutput(displayTag);
+
+        startDS.print("start");
+        displayDS.print("display");
+
 
         //7.将不同流的数据 写入到kafka不同主题中
+        pageDS.addSink(
+                MyKafkaUtil.getKafkaSink("dwd_page_log")
+        );
+        startDS.addSink(
+                MyKafkaUtil.getKafkaSink("dwd_start_log")
+        );
+        displayDS.addSink(
+                MyKafkaUtil.getKafkaSink("dwd_display_log")
+        );
 
 
         //8.执行任务
