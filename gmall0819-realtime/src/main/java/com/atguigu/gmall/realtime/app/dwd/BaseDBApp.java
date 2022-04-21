@@ -5,8 +5,9 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.ververica.cdc.connectors.mysql.MySQLSource;
 import com.alibaba.ververica.cdc.connectors.mysql.table.StartupOptions;
 import com.alibaba.ververica.cdc.debezium.DebeziumSourceFunction;
-import com.atguigu.gmall.realtime.app.dwd.function.MySchema;
-import com.atguigu.gmall.realtime.app.dwd.function.TableProcessFunction;
+import com.atguigu.gmall.realtime.function.DimSink;
+import com.atguigu.gmall.realtime.function.MySchema;
+import com.atguigu.gmall.realtime.function.TableProcessFunction;
 import com.atguigu.gmall.realtime.bean.TableProcess;
 import com.atguigu.gmall.realtime.util.MyKafkaUtil;
 import org.apache.flink.api.common.functions.FilterFunction;
@@ -15,7 +16,11 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.datastream.*;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
+import org.apache.flink.streaming.connectors.kafka.KafkaSerializationSchema;
 import org.apache.flink.util.OutputTag;
+import org.apache.kafka.clients.producer.ProducerRecord;
+
+import javax.annotation.Nullable;
 
 /**
  * @author coderhyh
@@ -113,8 +118,7 @@ public class BaseDBApp {
         DataStreamSource<String> mySQLStrDS = env.addSource(mysqlSource);
 
         //7.把配置流变成广播流，并定义广播状态
-        MapStateDescriptor<String, TableProcess> mapStateDescriptor =
-                new MapStateDescriptor<>("mapStateDescriptor", String.class, TableProcess.class);
+        MapStateDescriptor<String, TableProcess> mapStateDescriptor = new MapStateDescriptor<>("mapStateDescriptor", String.class, TableProcess.class);
         BroadcastStream<String> broadcast = mySQLStrDS.broadcast(mapStateDescriptor);
 
         //8.将主流(业务流)和广播流(配置流)进行连接
@@ -124,17 +128,30 @@ public class BaseDBApp {
         OutputTag<JSONObject> dimTag = new OutputTag<JSONObject>("dimTag") {
         };
 
-        SingleOutputStreamOperator<JSONObject> realDS = connectDS.process(new TableProcessFunction(dimTag, mapStateDescriptor));
+        SingleOutputStreamOperator<JSONObject> realDS = connectDS.process(
+                new TableProcessFunction(dimTag, mapStateDescriptor));
 
         DataStream<JSONObject> dimDS = realDS.getSideOutput(dimTag);
 
         dimDS.print("维度数据");
         realDS.print("事实数据");
 
-        //10 将维度侧输出流写到phoenix不同表中
+        //10 将维度侧输出流数据写到phoenix不同表中
+        dimDS.addSink(new DimSink());
 
         //11 将主流事实数据写到不同kafka主题中
+        realDS.addSink(MyKafkaUtil.getKafkaSinkBySchema(
+                new KafkaSerializationSchema<JSONObject>() {
+                    @Override
+                    public ProducerRecord<byte[], byte[]> serialize(JSONObject jsonObj, @Nullable Long aLong) {
 
+                        String topic = jsonObj.getString("sink_table");
+                        return new ProducerRecord<byte[], byte[]>(
+                                topic,
+                                jsonObj.getJSONObject("data").toJSONString().getBytes());
+                    }
+                }
+        ));
 
         env.execute();
     }

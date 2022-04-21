@@ -1,4 +1,4 @@
-package com.atguigu.gmall.realtime.app.dwd.function;
+package com.atguigu.gmall.realtime.function;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -16,6 +16,10 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author coderhyh
@@ -41,6 +45,7 @@ public class TableProcessFunction extends BroadcastProcessFunction<JSONObject, S
     }
 
     //处理主流数据
+    //根据当前处理数据的table和type拼接key，到状态中获取对应的配置tableprocess对象根据配置对象进行分流
     @Override
     public void processElement(JSONObject jsonObj,
                                BroadcastProcessFunction<JSONObject, String, JSONObject>.ReadOnlyContext ctx,
@@ -65,10 +70,13 @@ public class TableProcessFunction extends BroadcastProcessFunction<JSONObject, S
 
         //根据key从广播状态中获取当前操作所对应的配置信息
         TableProcess tableProcess = broadcastState.get(key);
+
         if (tableProcess != null) {
             //不管是事实数据还是维度数据，在向下游传递前，都应该携带上目的地属性
             String sinkTable = tableProcess.getSinkTable();
             jsonObj.put("sink_table", sinkTable);
+            //对不需要的属性进行过滤
+            filterColumn(jsonObj.getJSONObject("data"),tableProcess.getSinkColumns());
             //判断是事实还是维度
             if (TableProcess.SINK_TYPE_HBASE.equals(tableProcess.getSinkType())) {
                 //维度数据---放到维度侧输出流中
@@ -82,7 +90,9 @@ public class TableProcessFunction extends BroadcastProcessFunction<JSONObject, S
         }
     }
 
+
     //处理广播流数据
+    //读取配置信息，封装为tableprocess对象，放到广播状态中
     @Override
     public void processBroadcastElement(String jsonStr,
                                         BroadcastProcessFunction<JSONObject, String, JSONObject>.Context context,
@@ -94,6 +104,7 @@ public class TableProcessFunction extends BroadcastProcessFunction<JSONObject, S
         JSONObject dataJsonObj = jsonObj.getJSONObject("data");
         //将配置信息封装为一个TableProcess对象
         TableProcess tableProcess = dataJsonObj.toJavaObject(TableProcess.class);
+
         //获取业务数据库表名
         String sourceTable = tableProcess.getSourceTable();
         //获取操作类型
@@ -124,6 +135,21 @@ public class TableProcessFunction extends BroadcastProcessFunction<JSONObject, S
         broadcastState.put(key, tableProcess);
 
     }
+
+    /**
+     * 字段过滤
+     * @param dataJsonObj 要过滤的json对象  "data":{"tm_name":"xzls","logo_url":"fd","id":13}
+     * @param sinkColumns  保留的字段        id,tm_name
+     */
+    private void filterColumn(JSONObject dataJsonObj, String sinkColumns) {
+        String[] columnArr = sinkColumns.split(",");
+        //asList：数组转集合
+        List<String> columnList = Arrays.asList(columnArr);
+        //对过滤的json对象进行遍历
+        Set<Map.Entry<String, Object>> entrySet = dataJsonObj.entrySet();
+        entrySet.removeIf(entry->!columnList.contains(entry.getKey()));
+    }
+
 
     //提前创建维度表
     private void checkTable(String tableName, String fields, String pk, String ext) {

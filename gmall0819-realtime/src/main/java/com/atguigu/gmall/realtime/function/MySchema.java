@@ -1,4 +1,4 @@
-package com.atguigu.gmall.realtime.app.dwd.function;
+package com.atguigu.gmall.realtime.function;
 
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.ververica.cdc.debezium.DebeziumDeserializationSchema;
