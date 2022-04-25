@@ -139,7 +139,7 @@ public class BaseDBApp {
         //10 将维度侧输出流数据写到phoenix不同表中
         dimDS.addSink(new DimSink());
 
-        //11 将主流事实数据写到不同kafka主题中
+        //11 将主流事实数据写回到不同kafka dwd主题中
         realDS.addSink(MyKafkaUtil.getKafkaSinkBySchema(
                 new KafkaSerializationSchema<JSONObject>() {
                     @Override

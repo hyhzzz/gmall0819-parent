@@ -20,6 +20,7 @@ import java.text.SimpleDateFormat;
 /**
  * @author coderhyh
  * @create 2022-04-21 0:13
+ * 访客UV的明细准备
  */
 public class UniqueVisitorApp {
     public static void main(String[] args) throws Exception {
@@ -52,7 +53,7 @@ public class UniqueVisitorApp {
         //env.setRestartStrategy(RestartStrategies.failureRateRestart(3, Time.milliseconds(30000L), Time.days(30)));
 
         //2.6 设置状态后端
-        //env.setStateBackend(new FsStateBackend("hdfs://hadoop102:8020/gmall/ck/BaseDBApp"));
+        //env.setStateBackend(new FsStateBackend("hdfs://hadoop102:8020/gmall/ck/UniqueVisitorApp"));
 
         //2.7 设置操作hdfs用户权限
         //System.setProperty("HADOOP_USER_NAME", "atguigu");
@@ -124,7 +125,7 @@ public class UniqueVisitorApp {
 
         filterDS.print(">>>");
 
-        // 6.将过滤后的数据写到kafka的dwm_unique_visitor主题中
+        // 6.将过滤后的数据写回到kafka的dwm_unique_visitor主题中
         filterDS
                 .map(jsonObj -> jsonObj.toJSONString())
                 .addSink(MyKafkaUtil.getKafkaSink("dwm_unique_visitor"));

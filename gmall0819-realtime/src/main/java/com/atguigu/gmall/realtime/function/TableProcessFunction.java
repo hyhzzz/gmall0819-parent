@@ -75,8 +75,10 @@ public class TableProcessFunction extends BroadcastProcessFunction<JSONObject, S
             //不管是事实数据还是维度数据，在向下游传递前，都应该携带上目的地属性
             String sinkTable = tableProcess.getSinkTable();
             jsonObj.put("sink_table", sinkTable);
+
             //对不需要的属性进行过滤
             filterColumn(jsonObj.getJSONObject("data"),tableProcess.getSinkColumns());
+
             //判断是事实还是维度
             if (TableProcess.SINK_TYPE_HBASE.equals(tableProcess.getSinkType())) {
                 //维度数据---放到维度侧输出流中

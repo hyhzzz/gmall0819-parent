@@ -193,7 +193,7 @@ public class BaseLogApp {
         displayDS.print("display");
 
 
-        //7.将不同流的数据 写入到kafka不同主题中
+        //7.将不同流的数据 写回到kafka不同 dwd主题中
         pageDS.addSink(
                 MyKafkaUtil.getKafkaSink("dwd_page_log")
         );

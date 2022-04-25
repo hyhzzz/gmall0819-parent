@@ -39,7 +39,7 @@ public class MyKafkaUtil {
     }
 
     /**
-     * 封装Kafka生产者 精准一次性
+     * 封装Kafka生产者 本身实现了两阶段提交，可以保证精准一次性
      * 发送到指定的topic
      *
      * @param topic
