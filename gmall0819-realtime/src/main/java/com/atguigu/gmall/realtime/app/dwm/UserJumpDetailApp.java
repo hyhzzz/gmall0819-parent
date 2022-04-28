@@ -11,7 +11,6 @@ import org.apache.flink.cep.PatternFlatTimeoutFunction;
 import org.apache.flink.cep.PatternStream;
 import org.apache.flink.cep.pattern.Pattern;
 import org.apache.flink.cep.pattern.conditions.SimpleCondition;
-import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.KeyedStream;
@@ -35,9 +34,9 @@ public class UserJumpDetailApp {
     public static void main(String[] args) throws Exception {
         //1. 基本环境准备
         //1.1 指定流处理环境
-        //StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-        StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(new Configuration());
+        //StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(new Configuration());
 
         //1.2 设置并行度 和kafka分区数一致
         env.setParallelism(4);

@@ -83,4 +83,15 @@ public class MyKafkaUtil {
                 FlinkKafkaProducer.Semantic.EXACTLY_ONCE
         );
     }
+
+    //获取FlinkSQL连接kafka的配置信息
+    public static String getKafkaDDL(String topic, String groupId) {
+        String ddl = "'connector' = 'kafka'," +
+                "'topic' = '" + topic + "'," +
+                "'properties.bootstrap.servers' = '" + KAFKA_SERVER + "'," +
+                "'properties.group.id' = '" + groupId + "'," +
+                "'scan.startup.mode' = 'latest-offset'," +
+                "'format' = 'json'";
+        return ddl;
+    }
 }
